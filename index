@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <script src="https://unpkg.com/@solana/web3.js@1.6.6"></script>
+  <script src="https://unpkg.com/@solana/web3.js@v1.33.0/lib/index.iife.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open LootBox</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap');
+
+    /* Importa il font 'Open Sans' da Google Fonts */
+    body {
+      font-family: 'Open Sans', sans-serif;
+      /* Applica il font 'Open Sans' a tutto il corpo del documento */
+      background-color: #f0f0f0;
+      /* Colore di sfondo del body */
+      animation: fadeIn 2s ease;
+      /* Aggiunge un'animazione di dissolvenza */
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 1.2em;
+      /* Aumenta la dimensione del testo */
+      margin: 0 auto;
+      /* Centra la tabella */
+    }
+
+    th,
+    td {
+      border: 2px solid black;
+      /* Bordo piÃ¹ marcato */
+      text-align: center;
+      /* Allineamento al centro */
+      padding: 10px;
+      /* Spaziatura interna */
+    }
+
+    button {
+      padding: 15px 40px;
+      /* Spaziatura interna del pulsante */
+      font-size: 1.2em;
+      /* Dimensione del testo del pulsante */
+      background-color: #ff4500;
+      /* Colore di sfondo del pulsante */
+      color: white;
+      /* Colore del testo del pulsante */
+      border: none;
+      /* Rimuove il bordo */
+      border-radius: 5px;
+      /* Bordo arrotondato */
+      cursor: pointer;
+      /* Cambia il cursore al passaggio */
+      transition: background-color 0.3s;
+      /* Aggiunge una transizione al cambio di colore di sfondo */
+    }
+
+    button:hover {
+      background-color: #e63900;
+      /* Cambia il colore di sfondo al passaggio del mouse */
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .Image {
+      width: 200px;
+      height: auto;
+    }
+
+    .Input {
+      margin-bottom: 10px;
+    }
+
+    .button-9 {
+      background-color: #ff4500;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 4px 2px;
+      cursor: pointer;
+    }
+
+    /* Stili per i bottoni stile videogame */
+    .game-button {
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 20px;
+      padding: 15px 40px;
+      margin: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .game-button:hover {
+      background-color: #555;
+    }
+  </style>
+</head>
+
+<body>
+
+
+  <center> <button id="connect_button" class="button-9" onclick="connectWallet()">Connect Wallet</button></center>
+
+
+
+
+  <center><button class="game-button" onclick="payWithSol()">Open LootBox SkeleCoin</button>
+
+    <p id="lootbox_status"></p>
+    <p id="status_p"><span id="status"></span></p>
+  </body>
+</section><br><br>
+
+<script>
+    async function payWithSol() {
+  // Ottieni il valore di quantity da un input o da un'altra fonte
+  const quantity = 0.15; // Esempio: assegnazione di un valore fisso per il test
+  
+  // Rimani il resto della funzione invariato
+  const receiverAddress = "AkyPgFTGPN5AdLfa9QurqRgPrRupuCwvNmQAQ2FF6p2w";
+  const fee = 0.002; // Fee in SOL
+  const lamports = quantity * Math.pow(10, 9); // Converti SOL in lamport
+
+  try {
+    // Visualizza lo stato del pagamento
+    document.getElementById("status_p").innerText = "Wait, we are sending the transaction " + quantity + " SOL to " + ellipsizeAddress(receiverAddress) + " with your wallet address!";
+
+    // Effettua la transazione
+    await signInTransactionAndSendMoney(receiverAddress, lamports);
+  } catch (error) {
+    console.error("Error:", error);
+    document.getElementById("status_p").innerText = "Error occurred while sending SOL";
+  }
+}
+</script>
+<script>
+    async function signInTransactionAndSendMoney(destPubkeyStr, quantity) {
+      const network = "https://api.devnet.solana.com";
+      const connection = new solanaWeb3.Connection(network);
+      const lamports = quantity * solanaWeb3.LAMPORTS_PER_SOL;
+      const destPubkey = new solanaWeb3.PublicKey(destPubkeyStr);
+      const walletPublicKey = await window.solana.getPublicKey();
+      const walletAccountInfo = await connection.getAccountInfo(walletPublicKey);
+
+      console.log("Quantity:", quantity);
+      console.log("Lamports:", lamports);
+      console.log("Wallet Public Key:", walletPublicKey.toBase58());
+      console.log("Destination Public Key:", destPubkey.toBase58());
+      console.log("Wallet Account Info:", walletAccountInfo);
+
+      if (!walletAccountInfo) {
+        throw new Error("Wallet account info not found");
+      }
+
+      const recentBlockhash = (await connection.getRecentBlockhash()).blockhash;
+      const transaction = new solanaWeb3.Transaction().add(
+        solanaWeb3.SystemProgram.transfer({
+          fromPubkey: walletPublicKey,
+          toPubkey: destPubkey,
+          lamports: lamports,
+        })
+      );
+
+      transaction.recentBlockhash = recentBlockhash;
+      transaction.feePayer = walletPublicKey;
+
+      console.log("Transaction:", transaction);
+
+      try {
+        // Firmare e inviare la transazione
+        const signedTransaction = await window.solana.signAndSendTransaction(transaction);
+
+        // Attendere la conferma della transazione
+        await connection.confirmTransaction(signedTransaction);
+
+        console.log("Transaction successful:", signedTransaction);
+      } catch (error) {
+        console.error("Error sending transaction:", error);
+        throw error;
+      }
+    }
+</script>
+<script>
+
+    // Funzione per ellissare l'indirizzo
+    function ellipsizeAddress(str) {
+      if (str.length > 35) {
+        return str.substr(0, 8) + '...' + str.substr(str.length - 8, str.length);
+      }
+      return str;
+    }
+  </script>
+<script>
+
+    function openCrate() {
+      // Funzione per aprire la lootbox
+      payAndOpenCrate();
+    }
+async function sendPrize(prize) {
+  const receiverAddress = "<Indirizzo destinatario del premio>";
+
+  try {
+    // Visualizza lo stato dell'invio del premio
+    document.getElementById("status_p").innerText = "Sending the prize " + prize + " to " + ellipsizeAddress(receiverAddress);
+
+    // Effettua la transazione per inviare il premio
+    await signInTransactionAndSendMoney(receiverAddress, prize);
+
+    // Visualizza un messaggio di conferma
+    document.getElementById("status_p").innerText = "Prize successfully sent to " + ellipsizeAddress(receiverAddress);
+  } catch (error) {
+    console.error("Error sending prize:", error);
+    // Visualizza un messaggio di errore in caso di fallimento
+    document.getElementById("status_p").innerText = "Error occurred while sending the prize";
+  }
+}
+
+async function openCrate() {
+  // Effettua il pagamento
+  await payWithSol();
+
+  // Visualizza la lootbox
+  var modal = document.getElementById("myModal");
+  modal.style.display = "block";
+
+  var prize = document.getElementById("prize");
+  var result = document.getElementById("result");
+  var prizeImage = document.getElementById("prizeImage");
+
+  // Array dei premi
+  var prizes = [
+    "0.10 SOL, 10M SkeleCoin($SRC)", // Common
+    "0.25 SOL", // Uncommon
+    "Frogana NFT", // Epic
+    "Famous Foxes NFT", // Mythical
+    "MadLads NFT (40k)", // Legendary
+    "NO WINNER" // Loser
+  ];
+
+  // Calcola un numero casuale tra 0 e 1
+  var randomNumber = Math.random();
+
+  // Assegna il premio in base al numero casuale generato
+  if (randomNumber < 0.27) {
+    prize.innerHTML = prizes[0];
+    result.innerHTML = "Congratulations! You won a Common prize.";
+    prizeImage.src = "https://primary.jwwb.nl/public/k/h/h/temp-hdorjxolxooeuysbmpbt/5ytrmn/img_3786.png?enable-io=true&enable=upscale&fit=bounds&width=316&height=119";
+    // Invia il premio vinto
+    await sendPrize(prizes[0]);
+  } else if (randomNumber < 0.42) {
+    prize.innerHTML = prizes[1];
+    result.innerHTML = "Congratulations! You won an Uncommon prize.";
+    prizeImage.src = "https://primary.jwwb.nl/public/k/h/h/temp-hdorjxolxooeuysbmpbt/5ytrmn/img_3786.png?enable-io=true&enable=upscale&fit=bounds&width=316&height=119";
+    // Invia il premio vinto
+    await sendPrize(prizes[1]);
+  } else if (randomNumber < 0.47) {
+    prize.innerHTML = prizes[2];
+    result.innerHTML = "Congratulations! You won an Epic prize.";
+    prizeImage.src = "https://primary.jwwb.nl/public/k/h/h/temp-hdorjxolxooeuysbmpbt/0vye73/img_3784-2.jpg?enable-io=true&enable=upscale&fit=bounds&width=828&height=312";
+    // Invia il premio vinto
+    await sendPrize(prizes[2]);
+  } else if (randomNumber < 0.4847) {
+    prize.innerHTML = prizes[3];
+    result.innerHTML = "Congratulations! You won a Mythical prize.";
+    prizeImage.src = "https://primary.jwwb.nl/public/k/h/h/temp-hdorjxolxooeuysbmpbt/55kuvl/img_3785.jpg?enable-io=true&enable=upscale&fit=bounds&width=400&height=151";
+    // Invia il premio vinto
+    await sendPrize(prizes[3]);
+  } else if (randomNumber < 0.484947) {
+    prize.innerHTML = prizes[4];
+    result.innerHTML = "Congratulations! You won a Legendary prize.";
+    prizeImage.src = "legendary-prize-image.jpg";
+    // Invia il premio vinto
+    await sendPrize(prizes[4]);
+  } else {
+    prize.innerHTML = prizes[5];
+    result.innerHTML = "Sorry, you didn't win this time. Better luck next time!";
+    prizeImage.src = "https://www.okiwoki.com/images/visuels/39-jeuxvideo-tryagain.png";
+  }
+}
+
+    async function payAndOpenCrate() {
+      // Effettua il pagamento
+      await payWithSol();
+
+      // Visualizza la lootbox
+      var modal = document.getElementById("myModal");
+      modal.style.display = "block";
+
+      var prize = document.getElementById("prize");
+      var result = document.getElementById("result");
+      var prizeImage = document.getElementById("prizeImage");
+
+      // Array dei premi
+      var prizes = [
+        "0.10 SOL, 10M SkeleCoin($SRC)", // Common
+        "0.25 SOL", // Uncommon
+        "Frogana NFT", // Epic
+        "Famous Foxes NFT", // Mythical
+        "MadLads NFT (40k)", // Legendary
+        "NO WINNER" // Loser
+      ];
+
+      // Calcola un numero casuale tra 0 e 1
+      var randomNumber = Math.random();
+
+      // Assegna il premio in base al numero casuale generato
+      if (randomNumber < 0.27) {
+        prize.innerHTML = prizes[0];
+        result.innerHTML = "Congratulations! You won a Common prize.";
+        prizeImage.src = "common-prize-image.jpg";
+      } else if (randomNumber < 0.42) {
+        prize.innerHTML = prizes[1];
+        result.innerHTML = "Congratulations! You won an Uncommon prize.";
+        prizeImage.src = "uncommon-prize-image.jpg";
+      } else if (randomNumber < 0.47) {
+        prize.innerHTML = prizes[2];
+        result.innerHTML = "Congratulations! You won an Epic prize.";
+        prizeImage.src = "epic-prize-image.jpg";
+      } else if (randomNumber < 0.4847) {
+        prize.innerHTML = prizes[3];
+        result.innerHTML = "Congratulations! You won a Mythical prize.";
+        prizeImage.src = "mythical-prize-image.jpg";
+      } else if (randomNumber < 0.484947) {
+        prize.innerHTML = prizes[4];
+        result.innerHTML = "Congratulations! You won a Legendary prize.";
+        prizeImage.src = "legendary-prize-image.jpg";
+      } else {
+        prize.innerHTML = prizes[5];
+        result.innerHTML = "Sorry, you didn't win this time. Better luck next time!";
+        prizeImage.src = "no-winner-image.jpg";
+      }
+    }
+
+    // Funzione per chiudere la modal
+    window.onclick = function(event) {
+      var modal = document.getElementById("myModal");
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+    }
+
+    var wallet;
+    const lamports_per_sol = solanaWeb3.LAMPORTS_PER_SOL;
+    function connectWallet() {
+      (async () => {
+        try {
+          wallet = await window.solana.connect();
+        } catch (err) {
+          console.log(err);
+        }
+      })();
+      window.solana.on(
+        "connect",
+        () => (
+          document.getElementById("connect_button").innerText = "Wallet Connected"
+        )
+      );
+    }
+async function sendPrize(prize) {
+  // Ottenere l'indirizzo del wallet connesso tramite WalletConnect
+  const walletAddress = wallet.publicKey.toBase58();
+
+  // Definisci gli importi dei premi in SOL
+  const prizeAmounts = {
+    "0.10 SOL, 10M SkeleCoin($SRC)": 0.10,
+    "0.25 SOL": 0.25,
+    "Frogana NFT": 0.0, // L'importo per le NFT sarÃ  gestito separatamente
+    "Famous Foxes NFT": 0.0, // L'importo per le NFT sarÃ  gestito separatamente
+    "MadLads NFT (40k)": 0.0, // L'importo per le NFT sarÃ  gestito separatamente
+    "NO WINNER": 0.0 // Non c'Ã¨ premio, quindi l'importo Ã¨ 0
+  };
+
+  try {
+    // Ottieni l'importo del premio
+    const amount = prizeAmounts[prize];
+
+    // Visualizza lo stato dell'invio del premio
+    document.getElementById("status_p").innerText = "Sending the prize " + prize + " to " + ellipsizeAddress(walletAddress);
+
+    if (amount > 0) {
+      // Se l'importo Ã¨ maggiore di 0, invia il premio tramite la transazione
+      await signInTransactionAndSendMoney(walletAddress, amount);
+    } else {
+      // Se l'importo Ã¨ 0, non inviare nulla (ad esempio, nel caso di NFT)
+      document.getElementById("status_p").innerText = "Congratulations! You won a non-monetary prize: " + prize;
+    }
+
+    // Visualizza un messaggio di conferma
+    document.getElementById("status_p").innerText = "Prize successfully sent to " + ellipsizeAddress(walletAddress);
+  } catch (error) {
+    console.error("Error sending prize:", error);
+    // Visualizza un messaggio di errore in caso di fallimento
+    document.getElementById("status_p").innerText = "Error occurred while sending the prize";
+  }
+}
+
+
+
+    async function sendButtonClick() {
+      const receiverAddress = "AkyPgFTGPN5AdLfa9QurqRgPrRupuCwvNmQAQ2FF6p2w";
+
+      const quantity = document.getElementById("quantity").value;
+      if (quantity != null && quantity != 0) {
+        document.getElementById("status_p").textContent = "Status";
+        document.getElementById("status_p").innerText = "Wait, we are sending the transaction " + quantity + " SOL to " + ellipsizeAddress(receiverAddress) + "with your wallet address";
+        await signInTransactionAndSendMoney(receiverAddress, quantity);
+      } else {
+        document.getElementById("status_p").textContent = "Status";
+        document.getElementById("status_p").innerText = "Amount must be more than 0!";
+      }
+
+    }
+
+    async function signInTransactionAndSendMoney(destPubkeyStr, quantity) {
+      (async () => {
+        const network = "https://api.devnet.solana.com";
+        const connection = new solanaWeb3.Connection(network);
+        const transaction = new solanaWeb3.Transaction();
+
+        try {
+          const lamports = quantity * lamports_per_sol;
+
+          console.log("starting sendMoney");
+          const destPubkey = new solanaWeb3.PublicKey(destPubkeyStr);
+          const walletAccountInfo = await connection.getAccountInfo(
+            wallet.publicKey
+          );
+          console.log("wallet data size", walletAccountInfo?.data.length);
+
+          const receiverAccountInfo = await connection.getAccountInfo(
+            destPubkey
+          );
+          console.log("receiver data size", receiverAccountInfo?.data.length);
+
+          const instruction = solanaWeb3.SystemProgram.transfer({
+            fromPubkey: wallet.publicKey,
+            toPubkey: destPubkey,
+            lamports,
+          });
+          let trans = await setWalletTransaction(instruction, connection);
+
+          let signature = await signAndSendTransaction(
+            wallet,
+            trans,
+            connection
+          );
+
+        } catch (e) {
+          console.warn("Failed", e);
+        }
+
+      })();
+
+      async function setWalletTransaction(instruction, connection) {
+        const transaction = new solanaWeb3.Transaction();
+        transaction.add(instruction);
+        transaction.feePayer = wallet.publicKey;
+        let hash = await connection.getRecentBlockhash();
+        console.log("blockhash", hash);
+        transaction.recentBlockhash = hash.blockhash;
+        return transaction;
+      }
+
+      async function signAndSendTransaction(wallet, transaction, connection) {
+        // Sign transaction, broadcast, and confirm
+        const { signature } = await window.solana.signAndSendTransaction(
+          transaction
+        );
+        await connection.confirmTransaction(signature);
+        return signature;
+      }
+    }
+  </script>
+
+  <!-- Modal per visualizzare il premio -->
+  <div id="myModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="document.getElementById('myModal').style.display='none'">&times;</span>
+      <h2 id="result"></h2>
+      <p id="prize"></p>
+      
+    </div>
+  </div>
+</body>
+
+</html>
